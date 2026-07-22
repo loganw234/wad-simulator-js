@@ -1,0 +1,8 @@
+{
+  "name": "wad-simulator-js",
+  "version": "0.1.0",
+  "description": "Manage Mercenaries 2 patch WADs in the browser — add, merge, delete assets. A byte-faithful JS port of the community wad tooling.",
+  "type": "module",
+  "private": true,
+  "scripts": { "test": "node test/run.js", "build": "node tools/bundle.js" }
+}
