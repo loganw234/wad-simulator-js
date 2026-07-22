@@ -17,10 +17,14 @@ const t = {
   eq(name, got, want) {
     this.ok(name, Object.is(got, want) || got === want, `got ${fmt(got)}\n        want ${fmt(want)}`);
   },
+  throws(name, fn, re) {
+    try { fn(); this.ok(name, false, 'expected a throw, got none'); }
+    catch (e) { this.ok(name, !re || re.test(e.message), `message ${fmt(e.message)} !~ ${re}`); }
+  },
   info(msg) { console.log(`       \x1b[2m${msg}\x1b[0m`); },
 };
 
-const SUITES = ['roundtrip.test.js'];
+const SUITES = ['roundtrip.test.js', 'skinner.test.js'];
 for (const s of SUITES) {
   if (filter && !s.includes(filter)) continue;
   console.log(`\n\x1b[1m${s}\x1b[0m`);

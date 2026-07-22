@@ -10,7 +10,7 @@
 // modules. That assumption is CHECKED below — the build fails loudly rather than emitting a
 // file where one module silently shadows another's function. (Adapted from the skinner's.)
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -75,21 +75,43 @@ if (collisions.length) {
 // fflate declares its own top-level helpers (u16, etc.) that would collide with ours, so it
 // is isolated in an IIFE that exposes ONLY the two functions we call. `export function foo`
 // becomes a plain scoped `function foo`; the IIFE returns the pair.
+// Every name our modules actually import from fflate — the offline IIFE must expose all of
+// them, or they resolve to undefined in the single-file build (unzipSync did exactly that).
+const fflateImports = new Set();
+for (const p of ['src/sges.js', 'src/skinner_import.js']) {
+  const src = readFileSync(resolve(ROOT, p), 'utf8');
+  const m = src.match(/import\s*\{([^}]*)\}\s*from\s*['"][^'"]*fflate/);
+  if (m) m[1].split(',').forEach((n) => fflateImports.add(n.trim()));
+}
+
 const fflateSrc = readFileSync(VENDOR, 'utf8')
   .replace(/^(\s*)export\s+(?=(?:async\s+)?(?:function|const|let|var|class)\b)/gm, '$1')
   .replace(/^\s*export\s*\{[^}]*\}\s*;?\s*$/gm, '');
+// The exact fflate functions our modules import — collected above, so a new import can never
+// silently resolve to undefined in the offline build (unzipSync did once).
+const FFLATE_API = [...fflateImports];
+if (!FFLATE_API.length) throw new Error('found no fflate imports — did the vendor path change?');
 const fflate =
   '// --- vendored fflate (MIT), scoped so its internals cannot collide ---\n' +
-  'const { deflateSync, inflateSync } = (() => {\n' + fflateSrc +
-  '\nreturn { deflateSync, inflateSync };\n})();';
+  `const { ${FFLATE_API.join(', ')} } = (() => {\n` + fflateSrc +
+  `\nreturn { ${FFLATE_API.join(', ')} };\n})();`;
 
 const body = order.map((m) => `// ===== ${relative(ROOT, m.path).replace(/\\/g, '/')} =====\n${m.code}`).join('\n\n');
+
+// The "try the sample" button fetches samples/…zip on the hosted build; inline it as base64
+// here so the offline single file works too. (fetch() cannot read a sibling under file://.)
+const samplePath = resolve(ROOT, 'samples/demo-texture-assets.zip');
+let sampleGlobal = '';
+if (existsSync(samplePath)) {
+  const b64 = readFileSync(samplePath).toString('base64');
+  sampleGlobal = `window.__WADSIM_SAMPLE_B64__ = "${b64}";\n`;
+}
 
 let html = readFileSync(resolve(ROOT, 'index.html'), 'utf8');
 const scriptRe = /<script type="module">[\s\S]*?<\/script>/;
 if (!scriptRe.test(html)) throw new Error('index.html: no <script type="module"> entry point');
 html = html.replace(scriptRe,
-  '<script type="module">\n' + fflate + '\n\n' +
+  '<script type="module">\n' + sampleGlobal + fflate + '\n\n' +
   '// --- wad-simulator-js ---\n' + body + '\n\nboot();\n' +
   '</script>');
 

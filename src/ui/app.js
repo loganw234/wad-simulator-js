@@ -10,10 +10,12 @@
 // you're looking instead of being inferred from silence.
 
 import { $, el, fmtBytes, wireDrop, readFileBytes, downloadBytes, verdict } from './dom.js';
+import { Rail } from './rail.js';
 import { WadDoc } from '../wad.js';
 import { hex8, pandemicHashM2, sanitizeAssetName } from '../hash.js';
 import { isUcfx } from '../sges.js';
 import { TYPE } from '../block.js';
+import { parseSkinnerZip, assetsToBlocks } from '../skinner_import.js';
 
 const S = { doc: null, name: 'my-patch.wad' };
 
@@ -43,6 +45,13 @@ function renderStart() {
   openCard.addEventListener('click', () => openInput.click());
   openInput.addEventListener('change', (e) => { if (e.target.files[0]) openWad(e.target.files[0]); });
   cards.appendChild(openCard);
+
+  const packCard = el('button', 'card feature');
+  packCard.appendChild(el('div', 'card-icon', '🎨'));
+  packCard.appendChild(el('div', 'card-t', 'Pack a skinner export'));
+  packCard.appendChild(el('div', 'card-s', 'Drop the .zip the skinner gave you and get a ready-to-install WAD. No command line.'));
+  packCard.addEventListener('click', () => renderPack());
+  cards.appendChild(packCard);
 
   const newCard = el('button', 'card');
   newCard.appendChild(el('div', 'card-icon', '✨'));
@@ -89,6 +98,191 @@ async function openWad(file) {
   }
 }
 
+// ---------------------------------------------------------------- pack a skinner export
+// The guided path. A skinner "-assets.zip" already contains everything — the model, the
+// textures, and an install.bat that says exactly what each asset is called and what type it
+// is. This walks it in one rail: drop it (or try the sample), see what's inside, pick where
+// it goes, and out comes a WAD the game loads. The install.bat the zip carries would have
+// run mercs2_smuggler; this does the same packing with no shell and no download of a tool.
+function renderPack() {
+  const root = $('#app');
+  root.innerHTML = '';
+  root.appendChild(el('div', 'lead',
+    'The skinner\'s "new asset" export is a .zip. Drop it here and this packs it into a '
+    + 'patch WAD for you — the same result its install.bat would produce, without a command line.'));
+
+  const railRoot = el('div');
+  root.appendChild(railRoot);
+  const back = el('button', 'btn ghost', '← Back');
+  back.style.marginTop = '14px';
+  back.addEventListener('click', renderStart);
+  root.appendChild(back);
+
+  const P = { parsed: null };
+  const rail = new Rail(railRoot);
+
+  rail.add('drop', 'Drop your skinner export', (body) => {
+    body.appendChild(el('p', null,
+      'The file the skinner downloaded, named something like my_skin-assets.zip. It holds '
+      + 'the model, the textures and an install.bat — you do not need to unzip it.'));
+
+    const zone = el('label', 'drop');
+    zone.appendChild(el('b', null, 'Drop the -assets.zip'));
+    zone.appendChild(el('span', 'hint', 'or click to choose it'));
+    const input = el('input');
+    input.type = 'file';
+    input.accept = '.zip';
+    zone.appendChild(input);
+    wireDrop(zone, input, (files) => { if (files[0]) tryZip(files[0]); });
+    body.appendChild(zone);
+
+    const sampleRow = el('div', 'sample-row');
+    sampleRow.appendChild(el('span', 'dim', 'Never done this? '));
+    const sample = el('button', 'btn ghost', 'Try a ready-made example');
+    sample.addEventListener('click', () => loadSample(sample));
+    sampleRow.appendChild(sample);
+    sampleRow.appendChild(el('div', 'note',
+      'A small synthetic texture — no game art — packaged like a skinner export. Pack it and '
+      + 'watch the whole flow work before you make your own.'));
+    body.appendChild(sampleRow);
+
+    const out = el('div');
+    out.id = 'pack-out';
+    body.appendChild(out);
+
+    async function tryZip(file) {
+      out.innerHTML = '';
+      let bytes;
+      try { bytes = await readFileBytes(file); } catch (e) { return; }
+      handleZipBytes(bytes, file.name, out);
+    }
+    async function loadSample(btn) {
+      btn.disabled = true; btn.textContent = 'loading…';
+      out.innerHTML = '';
+      try {
+        const bytes = await fetchSample();
+        handleZipBytes(bytes, 'demo-texture-assets.zip', out);
+      } catch (e) {
+        out.appendChild(verdict({
+          ok: false, title: 'Sample unavailable',
+          lines: [{ k: 'reason', v: e.message, ok: false }],
+          hint: 'The offline single-file build does not carry the sample. Use the hosted '
+            + 'version for the example, or drop your own export.',
+        }));
+      }
+      btn.disabled = false; btn.textContent = 'Try a ready-made example';
+    }
+    function handleZipBytes(bytes, fname, out) {
+      try {
+        P.parsed = parseSkinnerZip(bytes);
+      } catch (e) {
+        return out.appendChild(verdict({
+          ok: false, title: 'That is not a skinner export',
+          lines: [{ k: 'file', v: fname, ok: false }, { k: 'reason', v: e.message }],
+          hint: 'Drop the -assets.zip from the skinner\'s "new asset" export. The modkit '
+            + 'export (PNGs + mod.json) packs itself and does not come here.',
+        }));
+      }
+      P.name = sanitizeAssetName(fname.replace(/-assets\.zip$/i, '').replace(/\.zip$/i, '')) || 'my_skin';
+      const models = P.parsed.assets.filter((a) => a.typeId === 19);
+      const texes = P.parsed.assets.filter((a) => a.typeId === 27);
+      out.appendChild(verdict({
+        ok: true,
+        title: `Read ${P.parsed.assets.length} asset${P.parsed.assets.length === 1 ? '' : 's'} from ${fname}`,
+        lines: [
+          { k: 'models', v: models.map((a) => `${a.name} ${hex8(a.hash)}`).join(', ') || 'none' },
+          { k: 'textures', v: texes.map((a) => a.name).join(', ') || 'none' },
+          { k: 'read from', v: P.parsed.source },
+        ],
+        hint: P.parsed.warnings.length ? P.parsed.warnings.join(' ') : undefined,
+      }));
+      const act = el('div', 'step-actions');
+      const go = el('button', 'btn', 'Use these →');
+      go.addEventListener('click', () => rail.complete('drop'));
+      act.appendChild(go);
+      out.appendChild(act);
+    }
+  }, () => (P.parsed ? `${P.parsed.assets.length} assets` : ''));
+
+  rail.add('target', 'Where should it go?', (body) => {
+    body.appendChild(el('p', null,
+      'A fresh patch is simplest. Merge into an existing one only if you already have a '
+      + 'vz-patch.wad you want these to join.'));
+    const cards = el('div', 'cards');
+
+    const fresh = el('button', 'card');
+    fresh.appendChild(el('div', 'card-icon', '✨'));
+    fresh.appendChild(el('div', 'card-t', 'A fresh patch'));
+    fresh.appendChild(el('div', 'card-s', 'Just these assets, in a new WAD.'));
+    fresh.addEventListener('click', () => { S.doc = WadDoc.empty(); finishPack(P); });
+    cards.appendChild(fresh);
+
+    const into = el('label', 'card');
+    into.appendChild(el('div', 'card-icon', '⤵'));
+    into.appendChild(el('div', 'card-t', 'Into an existing WAD'));
+    into.appendChild(el('div', 'card-s', 'Drop a vz-patch.wad; these are appended to it.'));
+    const inp = el('input');
+    inp.type = 'file'; inp.accept = '.wad'; inp.style.display = 'none';
+    into.appendChild(inp);
+    into.addEventListener('click', (e) => { if (e.target !== inp) inp.click(); });
+    inp.addEventListener('change', async (e) => {
+      if (!e.target.files[0]) return;
+      try {
+        S.doc = WadDoc.fromBytes(await readFileBytes(e.target.files[0]));
+        S.name = e.target.files[0].name;
+        finishPack(P, true);
+      } catch (err) {
+        flashInto(body, verdict({ ok: false, title: 'Not a WAD', lines: [{ k: 'reason', v: err.message, ok: false }] }));
+      }
+    });
+    cards.appendChild(into);
+    body.appendChild(cards);
+  });
+
+  rail.draw();
+}
+
+function finishPack(P, merged = false) {
+  const warnings = [];
+  for (const { asset, block } of assetsToBlocks(P.parsed.assets)) {
+    if (S.doc.assetIndex().has(asset.hash >>> 0)) {
+      warnings.push(`${asset.name} (${hex8(asset.hash)}) already exists in that WAD — it will be shadowed by load order.`);
+    }
+    S.doc.addBlock(block);
+  }
+  if (!merged) S.name = `${P.name || 'my_skin'}-patch.wad`;
+  renderManager();
+  const model = P.parsed.assets.find((a) => a.typeId === 19);
+  flash(verdict({
+    ok: true,
+    title: `Packed ${P.parsed.assets.length} asset${P.parsed.assets.length === 1 ? '' : 's'}`,
+    lines: [
+      { k: 'blocks now', v: String(S.doc.blocks.length) },
+      ...(warnings.length ? [{ k: 'collisions', v: String(warnings.length), ok: false }] : []),
+    ],
+    hint: (warnings.length ? warnings.join(' ') + '  ' : '')
+      + 'Press Save WAD, then drop it in your game as data\\vz-patch.wad (back up any '
+      + 'existing patch first)'
+      + (model ? `. Wear it in game with:  Player.SetOutfit(Player.GetLocalCharacter(), "${model.name}")` : '.'),
+  }));
+}
+
+function flashInto(el2, node) { el2.appendChild(node); }
+
+// The offline single-file build may inline the sample as base64; the dev/hosted build fetches
+// it. Try the global first so file:// works when it is present.
+async function fetchSample() {
+  if (typeof window !== 'undefined' && window.__WADSIM_SAMPLE_B64__) {
+    const bin = atob(window.__WADSIM_SAMPLE_B64__);
+    const b = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+    return b;
+  }
+  const res = await fetch('samples/demo-texture-assets.zip');
+  if (!res.ok) throw new Error(`sample fetch failed (${res.status})`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
 // ---------------------------------------------------------------- manager
 function renderManager() {
   const root = $('#app');
@@ -128,10 +322,10 @@ function renderManager() {
 
   const addZone = el('label', 'drop small');
   addZone.appendChild(el('b', null, '＋ Add an asset'));
-  addZone.appendChild(el('span', 'hint', 'drop a .ucfx container (a model or texture)'));
+  addZone.appendChild(el('span', 'hint', 'drop a .ucfx container, or a skinner -assets.zip'));
   const addInput = el('input');
   addInput.type = 'file';
-  addInput.accept = '.ucfx,.bin';
+  addInput.accept = '.ucfx,.bin,.zip';
   addInput.multiple = true;
   addZone.appendChild(addInput);
   wireDrop(addZone, addInput, (files) => addAssets(files));
@@ -212,16 +406,34 @@ function kindChip(b) {
 
 // ---------------------------------------------------------------- operations
 async function addAssets(files) {
+  const results = [];
+
+  // A skinner -assets.zip is handled whole: unzip, read its install.bat, add every asset with
+  // the exact name/hash/type it declares. No per-file prompting — the zip already knows.
+  for (const f of files.filter((x) => /\.zip$/i.test(x.name))) {
+    try {
+      const parsed = parseSkinnerZip(await readFileBytes(f));
+      for (const { asset, block } of assetsToBlocks(parsed.assets)) {
+        const collide = S.doc.assetIndex().has(asset.hash >>> 0);
+        S.doc.addBlock(block);
+        results.push({ ok: true, name: asset.name, hash: hex8(asset.hash),
+          warnings: collide ? ['already present — shadowed by load order'] : [] });
+      }
+      for (const w of parsed.warnings) results.push({ ok: false, name: '(zip)', msg: w });
+    } catch (e) {
+      results.push({ ok: false, name: f.name, msg: e.message });
+    }
+  }
+
   const containers = files.filter((f) => /\.(ucfx|bin)$/i.test(f.name));
-  if (!containers.length) {
+  if (!containers.length && !results.length) {
     return flash(verdict({
       ok: false, title: 'Nothing to add',
       lines: [{ k: 'dropped', v: `${files.length} file(s)`, ok: false }],
-      hint: 'Add a .ucfx container — a model or texture asset. If you have a PNG, encode it '
+      hint: 'Add a .ucfx container, or a skinner -assets.zip. If you have a PNG, encode it '
         + 'to a texture container in the skinner first.',
     }));
   }
-  const results = [];
   for (const f of containers) {
     const bytes = await readFileBytes(f);
     if (!isUcfx(bytes)) {

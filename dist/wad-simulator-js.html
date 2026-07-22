@@ -34,6 +34,32 @@
   .card-icon { font-size:26px; }
   .card-t { font-weight:600; }
   .card-s { color:var(--dim); font-size:12px; line-height:1.45; }
+  .card.feature { border-color:#2f4a6d; background:var(--panel2); }
+  .card.feature:hover { border-color:var(--accent); }
+
+  /* rail (guided pack path) */
+  .step { border:1px solid var(--line); border-radius:10px; margin-bottom:8px;
+          background:var(--panel); overflow:hidden; }
+  .step.open { border-color:#2f4a6d; background:var(--panel2); }
+  .step.locked { opacity:.4; }
+  .step-head { display:flex; align-items:center; gap:10px; width:100%; padding:12px 14px;
+               background:none; border:0; color:var(--fg); font:inherit; text-align:left; }
+  .step-head.clickable { cursor:pointer; }
+  .step-head.clickable:hover { background:#18243b; }
+  .step-n { flex:none; width:22px; height:22px; line-height:22px; text-align:center;
+            border-radius:50%; background:var(--panel); color:var(--faint);
+            border:1px solid var(--line); font-size:11px; }
+  .step.open .step-n { background:var(--accent); color:#06121f; border-color:var(--accent); font-weight:700; }
+  .step.done .step-n { background:#123324; color:var(--ok); border-color:#1e5236; }
+  .step-t { font-weight:600; }
+  .step.locked .step-t, .step.done .step-t { font-weight:400; color:var(--dim); }
+  .step-sum { color:var(--ok); font-size:12px; margin-left:auto; font-family:ui-monospace,monospace; }
+  .step-lock { margin-left:auto; font-size:10px; color:var(--faint); text-transform:uppercase; letter-spacing:.08em; }
+  .step-body { padding:2px 16px 18px; }
+  .step-body > p { color:var(--dim); margin:0 0 14px; max-width:70ch; }
+  .step-actions { display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap; }
+  .sample-row { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+  .sample-row .note { border-top:0; padding-top:6px; margin-top:6px; }
 
   .drop { display:block; border:1.5px dashed var(--line); border-radius:8px; padding:16px;
           text-align:center; cursor:pointer; background:var(--panel); transition:.12s; }
@@ -117,8 +143,9 @@
   <div id="app"></div>
 </main>
 <script type="module">
+window.__WADSIM_SAMPLE_B64__ = "UEsDBBQAAAAIAC8m9lzW4DEESwMAADirAAAYAAAAd2Fkc2ltX2RlbW9fdGV4dHVyZS51Y2Z47dlNaxNRFMbxSYu4Uqdg14ILF+5c+LJq1MaChLaDTUIqYqp0QIWgaEU3ons3oriVbJT40l1FF2I3jp9A/Qr9BK7jvdOkSVPTzPQwzZzkHwi3M9PTX9PJzenDKU7PlD2n/Rg3z7kLs5fs10fNc6x5/vLczLw9Pm6emea5i/O5xXNmrX9o1z+6sfzgdrWy7FfvVlb8xysP7/u2IJNxDoaVGSdXLpyy39muajQc5/pG4DqO522uxWLUtRKub99XNqYM5Hmbqz0fdbX1V0v4g/c98wjcH+bYcfqtWT9wi5MHMll/ym+Yh/15tr513H817nmv0Pp5+Dr8bje+v93F1+H3cqP7/3fx0+33c/v7u7v46fSjur39aC5+uvy47k4/noufDt/mAO9FrRbXbfuBW1uK/v8rftp8/fkVX+aPQn7Fl/o68yu+1NeZX/Glvs78ii/1deZXfKmvM7/iS33t+RVf4g9DfsVn/o+frK83v+JLfL35FV/i682v+BJfb37Fl/h68yu+xNeeX/Glvv78is/8H5/5Pz7zf3zm//jM//FHI7/iM//HZ/6Pz/wfPzlfb37Fl/h68yu+xNebX/Elvt78ii/x9eZXfImvPb/iS339+RWf+T8+83985v/4zP/xmf/jj0Z+xWf+j8/8H5/5P35yvt78ii/x9eZXfImvN7/iS3y9+RVf4uvNr/gSX3t+xZf6+vMrPvN/fOb/+Mz/8Zn/4zP/xx+N/IrP/B9fOP8vFArhWmzmQ7OG+fDz6scwb5rr4Rqeb63m+p1m/lReby5v7Tu7j36fPjTeuT/t9c7P52dL5VLn/huG+u66nfXb64al3r4Pfq19qu+2P+u3yj0/l/XXp39/Jl2vYX8mX5/O/Zl8fdr3Z7L1GvYn/Z/+T/+n/9P/6f/0f/o//Z/+T/+n/9P/6f/0f/o//Z/+T/+n/9P/6f/0/3j1X1ZNfalUevo6cE+av8/6zynfHmffmb+n2T9JX7fn/5w5bN6Xzd/LnDevZ+s+Jn19v19v9/X9fr3d17n/3H/uP/ef+z+a9z9bDdzvZ4+MHXtjfr9710pxj/da1zrGH6y//iRwn9/8emJQ69rClXxuIjfRa32Vf5m379vpheLs32+Lk/8AUEsDBBQAAAAIAC8m9lyVG65dvAAAAB4BAAALAAAAaW5zdGFsbC5iYXR1jbsKwkAQRftA/mFYSDlBxAekMkRFC20UxEZZNhMfJJmw2ZDY+O1ufAQLnfLeOedOSJ0ZOElcR1MGEMJmv94uZttlBDFlDIYaU2mChDXUMsbyklWpNKzxWgIi5AwnmRFIbfy3I6e6w4IWssyxlR0/KfSaaTQYzsNo5DrC26w8YV0lV1oRWgCEtwunz9ASWiLn6Q0OrgP2EC/5lZR5VV+qoD8OhHePi96PTb9SSSM6B9uJP59YSKPOvm3EA1BLAQIUABQAAAAIAC8m9lzW4DEESwMAADirAAAYAAAAAAAAAAAAAAAAAAAAAAB3YWRzaW1fZGVtb190ZXh0dXJlLnVjZnhQSwECFAAUAAAACAAvJvZclRuuXbwAAAAeAQAACwAAAAAAAAAAAAAAAACBAwAAaW5zdGFsbC5iYXRQSwUGAAAAAAIAAgB/AAAAZgQAAAAA";
 // --- vendored fflate (MIT), scoped so its internals cannot collide ---
-const { deflateSync, inflateSync } = (() => {
+const { deflateSync, inflateSync, unzipSync } = (() => {
 // DEFLATE is a complex format; to read this code, you should probably check the RFC first:
 // https://tools.ietf.org/html/rfc1951
 // You may also wish to take a look at the guide I made about this program:
@@ -2812,7 +2839,7 @@ function unzipSync(data, opts) {
     return files;
 }
 
-return { deflateSync, inflateSync };
+return { deflateSync, inflateSync, unzipSync };
 })();
 
 // --- wad-simulator-js ---
@@ -2874,6 +2901,70 @@ function verdict({ ok, title, lines = [], hint }) {
   }
   if (hint) box.appendChild(el('div', 'verdict-hint', hint));
   return box;
+}
+
+
+// ===== src/ui/rail.js =====
+// A rail: one step open at a time, finished ones collapsed to a tick, later ones locked.
+// Same design as the skinner's — a beginner is never left facing every choice at once, and
+// never able to skip ahead of a step that has to happen first.
+
+
+class Rail {
+  constructor(root) {
+    this.root = root;
+    this.steps = [];
+    this.open = 0;
+    this.onFinish = null;
+  }
+
+  add(id, title, render, summary) {
+    this.steps.push({ id, title, render, summary, done: false });
+    return this;
+  }
+
+  complete(id) {
+    const i = this.steps.findIndex((s) => s.id === id);
+    if (i < 0) return;
+    this.steps[i].done = true;
+    if (this.open === i) this.open = i + 1;
+    this.draw();
+    if (this.open >= this.steps.length && this.onFinish) this.onFinish();
+  }
+
+  reopen(id) {
+    const i = this.steps.findIndex((s) => s.id === id);
+    if (i < 0) return;
+    this.open = i;
+    for (let k = i; k < this.steps.length; k++) this.steps[k].done = false;
+    this.draw();
+  }
+
+  draw() {
+    this.root.innerHTML = '';
+    this.steps.forEach((s, i) => {
+      const locked = i > this.open;
+      const isOpen = i === this.open;
+      const wrap = el('div', `step${isOpen ? ' open' : ''}${locked ? ' locked' : ''}${s.done && !isOpen ? ' done' : ''}`);
+      const head = el('button', 'step-head');
+      head.type = 'button';
+      head.appendChild(el('span', 'step-n', s.done && !isOpen ? '✓' : String(i + 1)));
+      head.appendChild(el('span', 'step-t', s.title));
+      if (s.done && !isOpen && s.summary) head.appendChild(el('span', 'step-sum', s.summary() || ''));
+      if (locked) head.appendChild(el('span', 'step-lock', 'locked'));
+      if (s.done && !isOpen) {
+        head.addEventListener('click', () => this.reopen(s.id));
+        head.classList.add('clickable');
+      } else head.disabled = true;
+      wrap.appendChild(head);
+      if (isOpen) {
+        const body = el('div', 'step-body');
+        wrap.appendChild(body);
+        s.render(body, this);
+      }
+      this.root.appendChild(wrap);
+    });
+  }
 }
 
 
@@ -3585,6 +3676,133 @@ class WadDoc {
 }
 
 
+// ===== src/skinner_import.js =====
+// Read a skinner "-assets.zip" and turn it into ready-to-pack blocks.
+//
+// The skinner's new-asset export is a zip of:
+//   <model>.ucfx            the model container (type 19)
+//   <model>_<part>.ucfx     one texture container each (type 27)
+//   install.bat             the packing recipe
+//
+// install.bat is the AUTHORITATIVE manifest: it carries the exact
+// `--inject-extra <HASH>:<TYPEID>:"...<file>"` line per asset. Parsing it means we never
+// have to guess a hash or a type from a filename — we use precisely what the skinner
+// intended, so a WAD packed here is identical in identity to one packed by the smuggler the
+// .bat would have called. This is the whole point of the "pack a skinner export" path: the
+// zip already knows everything; the tool just does what the .bat says without a shell.
+
+
+const basename = (p) => p.replace(/\\/g, '/').split('/').pop();
+
+/** Strip a `.bat`/`.sh` path expression down to a bare filename: drops a surrounding quote,
+ *  a `%~dp0` / `$(dirname …)` prefix, and any directory part. */
+function cleanFilename(raw) {
+  let f = raw.trim().replace(/^["']|["']$/g, '');
+  // %~dp0 is `%~` + modifier letters + the arg digit. Match exactly that, or `[a-z]+` would
+  // greedily eat into the filename (%~dp0merc… -> stripped to _test…).
+  f = f.replace(/^%~[a-z]+\d/i, '');
+  f = f.replace(/^\$\{?[^}\s/]*\}?\//, '');     // ${DIR}/ or $DIR/
+  return basename(f);
+}
+
+/** Pull the `--inject-extra HASH:TYPEID:file` lines out of an install.bat / .sh. */
+function parseInstallScript(text) {
+  const out = [];
+  // The file field runs from the third colon to `.ucfx`, and may carry a quote and a
+  // %~dp0-style prefix — captured whole here, cleaned to a basename by cleanFilename.
+  const re = /--inject-extra\s+(0x[0-9a-fA-F]+)\s*:\s*(\d+)\s*:\s*("?[^"\n]*?\.ucfx"?)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    out.push({ hash: parseInt(m[1], 16) >>> 0, typeId: Number(m[2]), file: cleanFilename(m[3]) });
+  }
+  return out;
+}
+
+/**
+ * @param {Uint8Array} zipBytes
+ * @returns {{assets: Array<{name, hash, typeId, file, container}>, source: string, warnings: string[]}}
+ */
+function parseSkinnerZip(zipBytes) {
+  let files;
+  try {
+    files = unzipSync(zipBytes);
+  } catch (e) {
+    throw new Error(`Could not read the zip: ${e.message}`);
+  }
+
+  // index every entry by basename (skinner zips are flat, but be forgiving)
+  const byBase = new Map();
+  const ucfxNames = [];
+  for (const path of Object.keys(files)) {
+    const b = basename(path);
+    byBase.set(b.toLowerCase(), files[path]);
+    if (/\.ucfx$/i.test(b)) ucfxNames.push(b);
+  }
+  if (!ucfxNames.length) {
+    throw new Error('No .ucfx containers in this zip. Is it a skinner "new asset" export? '
+      + '(The modkit export has PNGs and a mod.json instead — that route packs itself.)');
+  }
+
+  const warnings = [];
+
+  // Prefer the install script: it is the authoritative hash/type map.
+  const scriptName = Object.keys(files).map(basename)
+    .find((n) => /^install\.(bat|sh)$|^build\.(bat|sh)$/i.test(n));
+  const recipe = scriptName
+    ? parseInstallScript(new TextDecoder().decode(byBase.get(scriptName.toLowerCase())))
+    : [];
+
+  const assets = [];
+  const used = new Set();
+
+  for (const r of recipe) {
+    const container = byBase.get(r.file.toLowerCase());
+    if (!container) {
+      warnings.push(`${r.file} is named in install.bat but not present in the zip — skipped.`);
+      continue;
+    }
+    if (!isUcfx(container)) {
+      warnings.push(`${r.file} is not a UCFX container — skipped.`);
+      continue;
+    }
+    if (!TYPE[r.typeId]) {
+      warnings.push(`${r.file} has an unknown type ${r.typeId} — skipped.`);
+      continue;
+    }
+    used.add(r.file.toLowerCase());
+    assets.push({ name: r.file.replace(/\.ucfx$/i, ''), hash: r.hash, typeId: r.typeId, file: r.file, container });
+  }
+
+  // Any .ucfx the script did not mention: fall back to inferring from the filename. The
+  // skinner names each file after its asset, so the hash is the name hashed; the type is
+  // guessed from the naming convention (a bare model name = model, a suffixed one = texture).
+  for (const name of ucfxNames) {
+    if (used.has(name.toLowerCase())) continue;
+    const base = name.replace(/\.ucfx$/i, '');
+    const container = byBase.get(name.toLowerCase());
+    if (!isUcfx(container)) continue;
+    // `_nm`/`_sm`/`_dm` or any `_part` suffix ⇒ texture; otherwise assume a model.
+    const looksTexture = /_(ub|lb|head|hair|eyes|body|dm|nm|sm|[a-z]+)$/i.test(base) && base.includes('_');
+    const typeId = looksTexture ? 27 : 19;
+    warnings.push(`${name} was not in install.bat; guessed ${TYPE[typeId].label} from its name.`);
+    assets.push({ name: base, hash: pandemicHashM2(base) >>> 0, typeId, file: name, container });
+  }
+
+  if (!assets.length) throw new Error('The zip had .ucfx files but none could be resolved to an asset.');
+
+  return { assets, source: scriptName ? `install script (${scriptName})` : 'filenames', warnings };
+}
+
+/** Turn parsed assets into blocks ready to append. Model first, so a viewer reads it first. */
+function assetsToBlocks(assets) {
+  const order = [...assets].sort((a, b) => (a.typeId === 19 ? 0 : 1) - (b.typeId === 19 ? 0 : 1));
+  return order.map((a) => ({
+    asset: a,
+    block: makeExtraBlock(a.container, a.hash, a.typeId, `blocks\\VZ\\${a.name}.block`),
+  }));
+}
+
+
 // ===== src/ui/app.js =====
 // wad-simulator-js UI.
 //
@@ -3626,6 +3844,13 @@ function renderStart() {
   openCard.addEventListener('click', () => openInput.click());
   openInput.addEventListener('change', (e) => { if (e.target.files[0]) openWad(e.target.files[0]); });
   cards.appendChild(openCard);
+
+  const packCard = el('button', 'card feature');
+  packCard.appendChild(el('div', 'card-icon', '🎨'));
+  packCard.appendChild(el('div', 'card-t', 'Pack a skinner export'));
+  packCard.appendChild(el('div', 'card-s', 'Drop the .zip the skinner gave you and get a ready-to-install WAD. No command line.'));
+  packCard.addEventListener('click', () => renderPack());
+  cards.appendChild(packCard);
 
   const newCard = el('button', 'card');
   newCard.appendChild(el('div', 'card-icon', '✨'));
@@ -3672,6 +3897,191 @@ async function openWad(file) {
   }
 }
 
+// ---------------------------------------------------------------- pack a skinner export
+// The guided path. A skinner "-assets.zip" already contains everything — the model, the
+// textures, and an install.bat that says exactly what each asset is called and what type it
+// is. This walks it in one rail: drop it (or try the sample), see what's inside, pick where
+// it goes, and out comes a WAD the game loads. The install.bat the zip carries would have
+// run mercs2_smuggler; this does the same packing with no shell and no download of a tool.
+function renderPack() {
+  const root = $('#app');
+  root.innerHTML = '';
+  root.appendChild(el('div', 'lead',
+    'The skinner\'s "new asset" export is a .zip. Drop it here and this packs it into a '
+    + 'patch WAD for you — the same result its install.bat would produce, without a command line.'));
+
+  const railRoot = el('div');
+  root.appendChild(railRoot);
+  const back = el('button', 'btn ghost', '← Back');
+  back.style.marginTop = '14px';
+  back.addEventListener('click', renderStart);
+  root.appendChild(back);
+
+  const P = { parsed: null };
+  const rail = new Rail(railRoot);
+
+  rail.add('drop', 'Drop your skinner export', (body) => {
+    body.appendChild(el('p', null,
+      'The file the skinner downloaded, named something like my_skin-assets.zip. It holds '
+      + 'the model, the textures and an install.bat — you do not need to unzip it.'));
+
+    const zone = el('label', 'drop');
+    zone.appendChild(el('b', null, 'Drop the -assets.zip'));
+    zone.appendChild(el('span', 'hint', 'or click to choose it'));
+    const input = el('input');
+    input.type = 'file';
+    input.accept = '.zip';
+    zone.appendChild(input);
+    wireDrop(zone, input, (files) => { if (files[0]) tryZip(files[0]); });
+    body.appendChild(zone);
+
+    const sampleRow = el('div', 'sample-row');
+    sampleRow.appendChild(el('span', 'dim', 'Never done this? '));
+    const sample = el('button', 'btn ghost', 'Try a ready-made example');
+    sample.addEventListener('click', () => loadSample(sample));
+    sampleRow.appendChild(sample);
+    sampleRow.appendChild(el('div', 'note',
+      'A small synthetic texture — no game art — packaged like a skinner export. Pack it and '
+      + 'watch the whole flow work before you make your own.'));
+    body.appendChild(sampleRow);
+
+    const out = el('div');
+    out.id = 'pack-out';
+    body.appendChild(out);
+
+    async function tryZip(file) {
+      out.innerHTML = '';
+      let bytes;
+      try { bytes = await readFileBytes(file); } catch (e) { return; }
+      handleZipBytes(bytes, file.name, out);
+    }
+    async function loadSample(btn) {
+      btn.disabled = true; btn.textContent = 'loading…';
+      out.innerHTML = '';
+      try {
+        const bytes = await fetchSample();
+        handleZipBytes(bytes, 'demo-texture-assets.zip', out);
+      } catch (e) {
+        out.appendChild(verdict({
+          ok: false, title: 'Sample unavailable',
+          lines: [{ k: 'reason', v: e.message, ok: false }],
+          hint: 'The offline single-file build does not carry the sample. Use the hosted '
+            + 'version for the example, or drop your own export.',
+        }));
+      }
+      btn.disabled = false; btn.textContent = 'Try a ready-made example';
+    }
+    function handleZipBytes(bytes, fname, out) {
+      try {
+        P.parsed = parseSkinnerZip(bytes);
+      } catch (e) {
+        return out.appendChild(verdict({
+          ok: false, title: 'That is not a skinner export',
+          lines: [{ k: 'file', v: fname, ok: false }, { k: 'reason', v: e.message }],
+          hint: 'Drop the -assets.zip from the skinner\'s "new asset" export. The modkit '
+            + 'export (PNGs + mod.json) packs itself and does not come here.',
+        }));
+      }
+      P.name = sanitizeAssetName(fname.replace(/-assets\.zip$/i, '').replace(/\.zip$/i, '')) || 'my_skin';
+      const models = P.parsed.assets.filter((a) => a.typeId === 19);
+      const texes = P.parsed.assets.filter((a) => a.typeId === 27);
+      out.appendChild(verdict({
+        ok: true,
+        title: `Read ${P.parsed.assets.length} asset${P.parsed.assets.length === 1 ? '' : 's'} from ${fname}`,
+        lines: [
+          { k: 'models', v: models.map((a) => `${a.name} ${hex8(a.hash)}`).join(', ') || 'none' },
+          { k: 'textures', v: texes.map((a) => a.name).join(', ') || 'none' },
+          { k: 'read from', v: P.parsed.source },
+        ],
+        hint: P.parsed.warnings.length ? P.parsed.warnings.join(' ') : undefined,
+      }));
+      const act = el('div', 'step-actions');
+      const go = el('button', 'btn', 'Use these →');
+      go.addEventListener('click', () => rail.complete('drop'));
+      act.appendChild(go);
+      out.appendChild(act);
+    }
+  }, () => (P.parsed ? `${P.parsed.assets.length} assets` : ''));
+
+  rail.add('target', 'Where should it go?', (body) => {
+    body.appendChild(el('p', null,
+      'A fresh patch is simplest. Merge into an existing one only if you already have a '
+      + 'vz-patch.wad you want these to join.'));
+    const cards = el('div', 'cards');
+
+    const fresh = el('button', 'card');
+    fresh.appendChild(el('div', 'card-icon', '✨'));
+    fresh.appendChild(el('div', 'card-t', 'A fresh patch'));
+    fresh.appendChild(el('div', 'card-s', 'Just these assets, in a new WAD.'));
+    fresh.addEventListener('click', () => { S.doc = WadDoc.empty(); finishPack(P); });
+    cards.appendChild(fresh);
+
+    const into = el('label', 'card');
+    into.appendChild(el('div', 'card-icon', '⤵'));
+    into.appendChild(el('div', 'card-t', 'Into an existing WAD'));
+    into.appendChild(el('div', 'card-s', 'Drop a vz-patch.wad; these are appended to it.'));
+    const inp = el('input');
+    inp.type = 'file'; inp.accept = '.wad'; inp.style.display = 'none';
+    into.appendChild(inp);
+    into.addEventListener('click', (e) => { if (e.target !== inp) inp.click(); });
+    inp.addEventListener('change', async (e) => {
+      if (!e.target.files[0]) return;
+      try {
+        S.doc = WadDoc.fromBytes(await readFileBytes(e.target.files[0]));
+        S.name = e.target.files[0].name;
+        finishPack(P, true);
+      } catch (err) {
+        flashInto(body, verdict({ ok: false, title: 'Not a WAD', lines: [{ k: 'reason', v: err.message, ok: false }] }));
+      }
+    });
+    cards.appendChild(into);
+    body.appendChild(cards);
+  });
+
+  rail.draw();
+}
+
+function finishPack(P, merged = false) {
+  const warnings = [];
+  for (const { asset, block } of assetsToBlocks(P.parsed.assets)) {
+    if (S.doc.assetIndex().has(asset.hash >>> 0)) {
+      warnings.push(`${asset.name} (${hex8(asset.hash)}) already exists in that WAD — it will be shadowed by load order.`);
+    }
+    S.doc.addBlock(block);
+  }
+  if (!merged) S.name = `${P.name || 'my_skin'}-patch.wad`;
+  renderManager();
+  const model = P.parsed.assets.find((a) => a.typeId === 19);
+  flash(verdict({
+    ok: true,
+    title: `Packed ${P.parsed.assets.length} asset${P.parsed.assets.length === 1 ? '' : 's'}`,
+    lines: [
+      { k: 'blocks now', v: String(S.doc.blocks.length) },
+      ...(warnings.length ? [{ k: 'collisions', v: String(warnings.length), ok: false }] : []),
+    ],
+    hint: (warnings.length ? warnings.join(' ') + '  ' : '')
+      + 'Press Save WAD, then drop it in your game as data\\vz-patch.wad (back up any '
+      + 'existing patch first)'
+      + (model ? `. Wear it in game with:  Player.SetOutfit(Player.GetLocalCharacter(), "${model.name}")` : '.'),
+  }));
+}
+
+function flashInto(el2, node) { el2.appendChild(node); }
+
+// The offline single-file build may inline the sample as base64; the dev/hosted build fetches
+// it. Try the global first so file:// works when it is present.
+async function fetchSample() {
+  if (typeof window !== 'undefined' && window.__WADSIM_SAMPLE_B64__) {
+    const bin = atob(window.__WADSIM_SAMPLE_B64__);
+    const b = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+    return b;
+  }
+  const res = await fetch('samples/demo-texture-assets.zip');
+  if (!res.ok) throw new Error(`sample fetch failed (${res.status})`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
 // ---------------------------------------------------------------- manager
 function renderManager() {
   const root = $('#app');
@@ -3711,10 +4121,10 @@ function renderManager() {
 
   const addZone = el('label', 'drop small');
   addZone.appendChild(el('b', null, '＋ Add an asset'));
-  addZone.appendChild(el('span', 'hint', 'drop a .ucfx container (a model or texture)'));
+  addZone.appendChild(el('span', 'hint', 'drop a .ucfx container, or a skinner -assets.zip'));
   const addInput = el('input');
   addInput.type = 'file';
-  addInput.accept = '.ucfx,.bin';
+  addInput.accept = '.ucfx,.bin,.zip';
   addInput.multiple = true;
   addZone.appendChild(addInput);
   wireDrop(addZone, addInput, (files) => addAssets(files));
@@ -3795,16 +4205,34 @@ function kindChip(b) {
 
 // ---------------------------------------------------------------- operations
 async function addAssets(files) {
+  const results = [];
+
+  // A skinner -assets.zip is handled whole: unzip, read its install.bat, add every asset with
+  // the exact name/hash/type it declares. No per-file prompting — the zip already knows.
+  for (const f of files.filter((x) => /\.zip$/i.test(x.name))) {
+    try {
+      const parsed = parseSkinnerZip(await readFileBytes(f));
+      for (const { asset, block } of assetsToBlocks(parsed.assets)) {
+        const collide = S.doc.assetIndex().has(asset.hash >>> 0);
+        S.doc.addBlock(block);
+        results.push({ ok: true, name: asset.name, hash: hex8(asset.hash),
+          warnings: collide ? ['already present — shadowed by load order'] : [] });
+      }
+      for (const w of parsed.warnings) results.push({ ok: false, name: '(zip)', msg: w });
+    } catch (e) {
+      results.push({ ok: false, name: f.name, msg: e.message });
+    }
+  }
+
   const containers = files.filter((f) => /\.(ucfx|bin)$/i.test(f.name));
-  if (!containers.length) {
+  if (!containers.length && !results.length) {
     return flash(verdict({
       ok: false, title: 'Nothing to add',
       lines: [{ k: 'dropped', v: `${files.length} file(s)`, ok: false }],
-      hint: 'Add a .ucfx container — a model or texture asset. If you have a PNG, encode it '
+      hint: 'Add a .ucfx container, or a skinner -assets.zip. If you have a PNG, encode it '
         + 'to a texture container in the skinner first.',
     }));
   }
-  const results = [];
   for (const f of containers) {
     const bytes = await readFileBytes(f);
     if (!isUcfx(bytes)) {
