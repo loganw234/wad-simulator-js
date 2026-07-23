@@ -11,8 +11,11 @@ Manage Mercenaries 2 patch WADs in your browser — **add, merge, delete** asset
 WAD the game loads. A byte-faithful JavaScript port of the community WAD packing tools, so
 nobody needs the Rust toolchain or a command line for the packing step.
 
-Open [`dist/wad-simulator-js.html`](dist/wad-simulator-js.html) — one self-contained file, no
-install, no network, no server. Or run the dev version with any static server.
+**Use it now: <https://loganw234.github.io/wad-simulator-js/>** — or open
+[`dist/wad-simulator-js.html`](dist/wad-simulator-js.html) locally: one self-contained file, no
+install, no network, no server. (The hosted page is the same single file; you can save it from
+[`/wad-simulator-js.html`](https://loganw234.github.io/wad-simulator-js/wad-simulator-js.html)
+for offline use.) Or run the dev version with any static server.
 
 > Prototype, standing in while the launcher is built. It does the packing; it does not make
 > skins — pair it with the skinner, which produces the `.ucfx` containers you add here.
