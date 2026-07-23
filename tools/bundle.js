@@ -78,7 +78,7 @@ if (collisions.length) {
 // Every name our modules actually import from fflate — the offline IIFE must expose all of
 // them, or they resolve to undefined in the single-file build (unzipSync did exactly that).
 const fflateImports = new Set();
-for (const p of ['src/sges.js', 'src/skinner_import.js']) {
+for (const p of ['src/sges.js', 'src/skinner_import.js', 'src/labels.js']) {
   const src = readFileSync(resolve(ROOT, p), 'utf8');
   const m = src.match(/import\s*\{([^}]*)\}\s*from\s*['"][^'"]*fflate/);
   if (m) m[1].split(',').forEach((n) => fflateImports.add(n.trim()));

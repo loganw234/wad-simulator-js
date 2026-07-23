@@ -14,6 +14,7 @@ import { u32 } from './bytes.js';
 // LoadAsset type string). Ported from mercs2_smuggler::type_hash_for_type_id.
 export const TYPE = {
   19: { hash: 0x5b724250, label: 'model' },
+  23: { hash: 0xfe0e8320, label: 'ui movie' },
   27: { hash: 0xf011157a, label: 'texture' },
   35: { hash: 0x42498680, label: 'script' },
 };
@@ -54,7 +55,7 @@ export function parseBlockEntryTable(decompressed) {
  */
 export function makeExtraBlock(container, hash, typeId, pathHint) {
   const t = TYPE[typeId];
-  if (!t) throw new Error(`unsupported type_id ${typeId} (need 19 model / 27 texture / 35 script)`);
+  if (!t) throw new Error(`unsupported type_id ${typeId} (need 19 model / 23 ui movie / 27 texture / 35 script)`);
   if (!isUcfx(container)) throw new Error('not a UCFX container (must start with the UCFX magic)');
 
   const inner = new Uint8Array(20 + container.length);
@@ -101,6 +102,7 @@ export function describeBlock(block, { deep = false } = {}) {
     decompressedBytes: decomp ? decomp.length : null,
     asetHashes: block.asetEntries.map((e) => ({
       hash: hex8(e.assetHash),
+      hashNum: e.assetHash >>> 0,
       sub: (e.u32_2 & 0xffff) === 0xffff ? null : (e.u32_2 & 0xffff),
       typeId: e.u32_3,
       typeLabel: TYPE[e.u32_3] ? TYPE[e.u32_3].label : String(e.u32_3),

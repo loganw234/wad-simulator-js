@@ -30,14 +30,25 @@ for offline use.) Or run the dev version with any static server.
   before making your own.
 - **Open** a `vz-patch.wad` and see every block: its assets, their hashes and types, the LOD
   sub-pointer, and sizes.
-- **Add** a new asset from a `.ucfx` container (a model or texture), or a whole skinner
-  `-assets.zip` at once. A single `.ucfx` prompts for a name, hashed live so you see the
-  identity before you commit; a zip is unpacked and added wholesale from its manifest. A name
-  that collides with something already in the WAD is flagged rather than silently shadowed.
-- **Merge** another patch WAD in — its blocks are appended, and any asset-hash collision
-  between the two is surfaced.
-- **Delete** a block, with a warning if something else pointed at it for its finer LOD.
-- **Save** the result back to a `.wad`.
+- **Add** a new asset from a `.ucfx` container (a model or texture), a whole skinner
+  `-assets.zip`, or a **`.gfx` UI movie** from GFXForge. A single file prompts for a name,
+  hashed live so you see the identity before you commit; a zip is unpacked wholesale from its
+  manifest. A name that collides with something already in the WAD is flagged, not shadowed.
+- **Pack a UI movie** — made a menu or HUD in GFXForge? Drop the `.gfx` and this wraps it in
+  the Scaleform container the game reads (byte-identical to the community `gfx_tool`), so UI
+  mods pack as easily as skins.
+- **Read every block in plain language.** Each asset shows a friendly type (Texture, Model,
+  Script, UI movie…), and — the thing beginners need most — whether it 🔁 **replaces** a base
+  game asset or ✨ **adds** a brand-new one. Where the asset's name is recoverable, it's shown
+  instead of a bare hash. (Powered by a bundled name dictionary + a base-game hash fingerprint;
+  strings and hashes only, no game art.)
+- **See mods, not blocks.** A patch can carry a tiny [mod manifest](docs/mod-manifest.md) that
+  names it and lists its blocks, so the tool shows "Jen Outfit (12 blocks)" with one remove
+  button instead of raw hex. "Name this mod" stamps the current patch; exporters can embed one.
+- **Merge** another patch WAD in — blocks appended, asset-hash collisions surfaced.
+- **Delete** a block (with a warning if something pointed at it for its finer LOD), or **Back
+  up** the current WAD in one click before you change it.
+- **Save** the result back to a `.wad`, with step-by-step install instructions.
 
 ## Why it's trustworthy
 

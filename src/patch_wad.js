@@ -207,9 +207,20 @@ export function readPatchWad(raw) {
     const flags = (flagsPages >>> 16) & 0xffff;
     const blkOff = pageIdx * PAGE_SIZE;
     const end = Math.min(blkOff + pages * PAGE_SIZE, raw.length);
-    let actualEnd = end;
-    while (actualEnd > blkOff + 4 && raw[actualEnd - 1] === 0) actualEnd--;
-    actualEnd = Math.min(alignUp(actualEnd - blkOff, 4) + blkOff, end);
+    // An sges block records its exact byte length (totalC @ +12), so use that authoritative
+    // value rather than trimming trailing zeros — a short compressed stream can legitimately
+    // END in 0x00 (e.g. a tiny manifest block), which the zero-trim heuristic would corrupt.
+    let actualEnd;
+    const isSgesBlk = blkOff + 16 <= raw.length &&
+      raw[blkOff] === 0x73 && raw[blkOff + 1] === 0x67 && raw[blkOff + 2] === 0x65 && raw[blkOff + 3] === 0x73;
+    if (isSgesBlk) {
+      const totalC = u32(raw, blkOff + 12);
+      actualEnd = totalC > 16 && blkOff + totalC <= end ? blkOff + totalC : end;
+    } else {
+      actualEnd = end;
+      while (actualEnd > blkOff + 4 && raw[actualEnd - 1] === 0) actualEnd--;
+      actualEnd = Math.min(alignUp(actualEnd - blkOff, 4) + blkOff, end);
+    }
     const b = new PatchBlock(
       raw.slice(blkOff, actualEnd),
       paths[i] !== undefined ? paths[i] : `block_${String(i).padStart(5, '0')}`,

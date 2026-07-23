@@ -11,6 +11,8 @@
 import { readPatchWad, buildPatchWadMulti, PatchBlock, AsetEntry, FFCS_CERT_BLOB } from './patch_wad.js';
 import { makeExtraBlock, describeBlock, TYPE } from './block.js';
 import { pandemicHashM2, hex8 } from './hash.js';
+import { makeMovieBlock } from './gfx.js';
+import { makeManifestBlock, groupBlocks, MANIFEST_PATH_PREFIX, MANIFEST_PATH_SUFFIX } from './mods.js';
 
 export class WadDoc {
   /** @param {{blocks: PatchBlock[], csumValue: number}} contents */
@@ -84,6 +86,44 @@ export class WadDoc {
   addBlock(block) {
     this.blocks.push(block);
     return { index: this.blocks.length - 1 };
+  }
+
+  /**
+   * Add a Scaleform UI movie (.gfx/.cfx from GFXForge) under `name` — override an existing
+   * game movie by its exact name, or a new name loaded via SetSwfFile("<name>.gfx").
+   * @returns {{hash, index, warnings: string[]}}
+   */
+  addMovie({ movie, name }) {
+    const { block, hash } = makeMovieBlock(movie, name);
+    const warnings = [];
+    const existing = this.assetIndex();
+    if (existing.has(hash >>> 0)) {
+      warnings.push(`0x${(hash >>> 0).toString(16).toUpperCase()} already exists in this WAD (block ${existing.get(hash >>> 0).block}); load order decides which wins.`);
+    }
+    this.blocks.push(block);
+    return { hash, index: this.blocks.length - 1, warnings };
+  }
+
+  /** The mods in this patch, grouped from manifest blocks (unclaimed blocks → one "other"). */
+  mods() {
+    return groupBlocks(this.blocks);
+  }
+
+  /**
+   * Stamp this patch with a mod manifest so tools show it as one named mod. Replaces any
+   * existing manifest block. `blocks` defaults to every non-manifest block currently present.
+   */
+  tagMod(manifest) {
+    const isManifest = (b) => {
+      const p = b.pathString || '';
+      return p.startsWith(MANIFEST_PATH_PREFIX) && p.endsWith(MANIFEST_PATH_SUFFIX);
+    };
+    this.blocks = this.blocks.filter((b) => !isManifest(b));
+    const paths = (manifest.blocks && manifest.blocks.length)
+      ? manifest.blocks
+      : this.blocks.map((b) => b.pathString);
+    this.blocks.push(makeManifestBlock({ ...manifest, blocks: paths }));
+    return { blocks: paths.length };
   }
 
   /**

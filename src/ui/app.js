@@ -16,6 +16,9 @@ import { hex8, pandemicHashM2, sanitizeAssetName } from '../hash.js';
 import { isUcfx } from '../sges.js';
 import { TYPE } from '../block.js';
 import { parseSkinnerZip, assetsToBlocks } from '../skinner_import.js';
+import { describeAsset, typeInfo, hashName } from '../labels.js';
+import { sniffMovie } from '../gfx.js';
+import { groupBlocks } from '../mods.js';
 
 const S = { doc: null, name: 'my-patch.wad' };
 
@@ -53,6 +56,22 @@ function renderStart() {
   packCard.addEventListener('click', () => renderPack());
   cards.appendChild(packCard);
 
+  const gfxCard = el('button', 'card');
+  gfxCard.appendChild(el('div', 'card-icon', '🎬'));
+  gfxCard.appendChild(el('div', 'card-t', 'Pack a UI movie'));
+  gfxCard.appendChild(el('div', 'card-s', 'Made a menu/HUD in GFXForge? Drop its .gfx and get an installable WAD.'));
+  const gfxInput = el('input');
+  gfxInput.type = 'file'; gfxInput.accept = '.gfx,.cfx,.swf'; gfxInput.style.display = 'none';
+  gfxCard.appendChild(gfxInput);
+  gfxCard.addEventListener('click', () => gfxInput.click());
+  gfxInput.addEventListener('change', (e) => {
+    if (!e.target.files[0]) return;
+    S.doc = WadDoc.empty(); S.name = 'my-ui-patch.wad';
+    renderManager();
+    addAssets([e.target.files[0]]);
+  });
+  cards.appendChild(gfxCard);
+
   const newCard = el('button', 'card');
   newCard.appendChild(el('div', 'card-icon', '✨'));
   newCard.appendChild(el('div', 'card-t', 'Start empty'));
@@ -61,6 +80,7 @@ function renderStart() {
   cards.appendChild(newCard);
 
   root.appendChild(cards);
+  root.appendChild(howItWorks());
 
   // A drop zone spanning both, so dragging a WAD anywhere works.
   const drop = el('label', 'drop');
@@ -77,6 +97,33 @@ function renderStart() {
     'New to this? A patch WAD is a mod file the game loads on top of its own data — it '
     + 'never changes the base game. This tool reads and writes them; it does not make skins. '
     + 'For that, use the skinner and bring its output here to pack.'));
+}
+
+// A collapsible three-box picture of where this tool sits. Beginners land here with no
+// mental model at all — this is the one-glance version.
+function howItWorks() {
+  const d = el('details', 'how');
+  const sum = el('summary', null, 'New here? How modding Mercenaries 2 fits together');
+  d.appendChild(sum);
+  const flow = el('div', 'how-flow');
+  const box = (icon, t, s) => {
+    const b = el('div', 'how-box');
+    b.appendChild(el('div', 'how-icon', icon));
+    b.appendChild(el('div', 'how-t', t));
+    b.appendChild(el('div', 'how-s', s));
+    return b;
+  };
+  flow.appendChild(box('🛠️', 'Make the piece', 'A skin in the skinner, a menu in GFXForge, a model, a script. Each exports a small file.'));
+  flow.appendChild(el('div', 'how-arrow', '→'));
+  flow.appendChild(box('📦', 'Pack it here', 'This tool wraps those pieces into one vz-patch.wad — the format the game reads.'));
+  flow.appendChild(el('div', 'how-arrow', '→'));
+  flow.appendChild(box('🎮', 'Install & play', 'Drop the WAD in your game\'s data\\ folder and restart. It overlays the base game; nothing original is changed.'));
+  d.appendChild(flow);
+  d.appendChild(el('div', 'note',
+    'Two things a block can do: 🔁 REPLACE something the game already has (an override — safe, '
+    + 'reversible by removing the patch), or ✨ ADD something brand-new (which needs a script or '
+    + 'template that asks for it). This tool labels every block as one or the other.'));
+  return d;
 }
 
 async function openWad(file) {
@@ -304,13 +351,30 @@ function renderManager() {
     const bytes = S.doc.toBytes();
     downloadBytes(S.name, bytes);
     flash(verdict({
-      ok: true, title: 'Saved',
+      ok: true, title: 'Saved — now install it',
       lines: [{ k: 'file', v: S.name }, { k: 'size', v: fmtBytes(bytes.length) }, { k: 'blocks', v: String(S.doc.blocks.length) }],
-      hint: 'Drop this in your game as data\\vz-patch.wad, or import it in the modkit to '
-        + 'merge with your other mods. Back up any existing patch first.',
+      hint: 'To install:  1) rename it to  vz-patch.wad   2) put it in your game\'s  data\\  folder '
+        + '(back up any vz-patch.wad already there — or use “Back up” above first)   3) restart the game. '
+        + 'Prefer keeping your other mods? Import this in the modkit to merge instead of replace.',
     }));
   });
   bar.appendChild(save);
+
+  const backup = el('button', 'btn ghost', 'Back up');
+  backup.title = 'Download a copy of this WAD as-is, before you change it';
+  backup.disabled = !S.doc.blocks.length;
+  backup.addEventListener('click', () => {
+    downloadBytes(S.name.replace(/\.wad$/i, '') + '.backup.wad', S.doc.toBytes());
+    flash(verdict({ ok: true, title: 'Backup saved', lines: [{ k: 'file', v: S.name.replace(/\.wad$/i, '') + '.backup.wad' }],
+      hint: 'Keep this somewhere safe. If a change goes wrong, open this file to get back.' }));
+  });
+  bar.appendChild(backup);
+
+  const tag = el('button', 'btn ghost', S.doc.mods().some((g) => g.name) ? 'Edit mod name' : 'Name this mod');
+  tag.title = 'Give the whole patch a mod name so tools list it as one mod';
+  tag.disabled = !S.doc.blocks.length;
+  tag.addEventListener('click', promptTagMod);
+  bar.appendChild(tag);
 
   const close = el('button', 'btn ghost', 'Close');
   close.addEventListener('click', () => { S.doc = null; renderStart(); });
@@ -322,10 +386,10 @@ function renderManager() {
 
   const addZone = el('label', 'drop small');
   addZone.appendChild(el('b', null, '＋ Add an asset'));
-  addZone.appendChild(el('span', 'hint', 'drop a .ucfx container, or a skinner -assets.zip'));
+  addZone.appendChild(el('span', 'hint', 'a skinner .zip, a .ucfx container, or a .gfx UI movie'));
   const addInput = el('input');
   addInput.type = 'file';
-  addInput.accept = '.ucfx,.bin,.zip';
+  addInput.accept = '.ucfx,.bin,.zip,.gfx,.cfx,.swf';
   addInput.multiple = true;
   addZone.appendChild(addInput);
   wireDrop(addZone, addInput, (files) => addAssets(files));
@@ -354,54 +418,102 @@ function renderManager() {
 function renderTable() {
   const wrap = el('div', 'table-wrap');
   if (!S.doc.blocks.length) {
-    wrap.appendChild(el('div', 'empty', 'No blocks yet. Add an asset above, or merge another WAD.'));
+    wrap.appendChild(el('div', 'empty',
+      'No blocks yet — that is normal for a new patch. Add an asset above (a skinner .zip, a '
+      + '.ucfx container, or a .gfx UI movie), or merge another WAD.'));
     return wrap;
   }
-  const table = el('table', 'blocks');
-  const head = el('tr');
-  for (const h of ['#', 'kind', 'assets', 'path', 'size', '']) head.appendChild(el('th', null, h));
-  table.appendChild(head);
 
-  for (const b of S.doc.list()) {
-    const tr = el('tr');
-    tr.appendChild(el('td', 'mono dim', String(b.index)));
-    const kindTd = el('td');
-    kindTd.appendChild(kindChip(b));
-    tr.appendChild(kindTd);
+  const rows = S.doc.list();
+  const groups = groupBlocks(S.doc.blocks);
+  const manifestIdx = new Set(groups.filter((g) => g.manifestIndex !== null).map((g) => g.manifestIndex));
 
-    const assets = el('td');
-    if (b.asetHashes.length) {
-      for (const a of b.asetHashes) {
-        const chip = el('span', 'asset-chip');
-        chip.appendChild(el('span', 'asset-h', a.hash));
-        chip.appendChild(el('span', 'asset-t', a.typeLabel));
-        if (a.sub !== null) chip.appendChild(el('span', 'asset-sub', `→ block ${a.sub}`));
-        assets.appendChild(chip);
-      }
-    } else {
-      assets.appendChild(el('span', 'dim', 'none (reached via a sub-pointer)'));
+  // One section per mod. A single unnamed "other" group renders without a header.
+  const onlyOther = groups.length === 1 && groups[0].name === null;
+  for (const g of groups) {
+    if (!onlyOther) wrap.appendChild(modHeader(g));
+    const table = el('table', 'blocks');
+    const head = el('tr');
+    for (const h of ['#', 'what it is', 'name', 'in the patch', 'size', '']) head.appendChild(el('th', null, h));
+    table.appendChild(head);
+    for (const bi of g.indices) {
+      // The manifest block itself is shown as the mod header, not as a data row.
+      if (manifestIdx.has(bi) && !onlyOther) continue;
+      table.appendChild(blockRow(rows[bi], bi === g.manifestIndex));
     }
-    tr.appendChild(assets);
-
-    tr.appendChild(el('td', 'mono path', b.path));
-    tr.appendChild(el('td', 'mono dim', fmtBytes(b.compressedBytes)));
-
-    const act = el('td');
-    const del = el('button', 'btn tiny danger', 'Delete');
-    del.addEventListener('click', () => deleteBlock(b.index));
-    act.appendChild(del);
-    tr.appendChild(act);
-
-    table.appendChild(tr);
+    wrap.appendChild(table);
   }
-  wrap.appendChild(table);
   return wrap;
 }
 
-function kindChip(b) {
-  const span = el('span', 'kind-chip ' + b.kind);
-  span.textContent = b.kind;
-  return span;
+function modHeader(g) {
+  const head = el('div', 'mod-head');
+  if (g.name === null) {
+    head.appendChild(el('span', 'mod-name', 'Loose blocks'));
+    head.appendChild(el('span', 'mod-meta', `${g.indices.length} block${g.indices.length === 1 ? '' : 's'} not part of a named mod`));
+    return head;
+  }
+  head.classList.add('named');
+  head.appendChild(el('span', 'mod-badge', 'MOD'));
+  head.appendChild(el('span', 'mod-name', g.name));
+  const meta = [];
+  if (g.author) meta.push(`by ${g.author}`);
+  if (g.version) meta.push(`v${g.version}`);
+  meta.push(`${g.indices.length} block${g.indices.length === 1 ? '' : 's'}`);
+  head.appendChild(el('span', 'mod-meta', meta.join(' · ')));
+  const rm = el('button', 'btn tiny danger', 'Remove mod');
+  rm.title = 'Delete this mod and all its blocks';
+  rm.addEventListener('click', () => removeMod(g));
+  head.appendChild(rm);
+  if (g.description) head.appendChild(el('div', 'mod-desc', g.description));
+  return head;
+}
+
+function blockRow(b, isManifest) {
+  const tr = el('tr');
+  tr.appendChild(el('td', 'mono dim', String(b.index)));
+
+  // "what it is" — friendly type + the override/new verdict per asset.
+  const whatTd = el('td');
+  const nameTd = el('td');
+  if (isManifest) {
+    whatTd.appendChild(el('span', 'kind-chip note', 'mod info'));
+    whatTd.appendChild(el('span', 'blurb', 'names this mod (invisible to the game)'));
+    nameTd.appendChild(el('span', 'dim', '—'));
+  } else if (b.asetHashes.length) {
+    for (const a of b.asetHashes) {
+      const d = describeAsset(a.hashNum, a.typeId);
+      const line = el('div', 'asset-line');
+      line.appendChild(el('span', 'type-chip t' + a.typeId, d.typeLabel));
+      const badge = el('span', 'verdict-badge ' + d.verdict);
+      badge.textContent = d.verdict === 'override' ? '🔁 replaces' : '✨ new';
+      badge.title = d.sentence;
+      line.appendChild(badge);
+      if (a.sub !== null) line.appendChild(el('span', 'asset-sub', `+ detail → block ${a.sub}`));
+      whatTd.appendChild(line);
+
+      const nm = el('div', 'asset-name');
+      nm.appendChild(el('span', d.name ? 'known-name' : 'mono dim', d.name || a.hash));
+      nm.appendChild(el('span', 'blurb', d.blurb));
+      nameTd.appendChild(nm);
+    }
+  } else {
+    whatTd.appendChild(el('span', 'dim', 'detail data'));
+    whatTd.appendChild(el('span', 'blurb', 'a finer version reached through another asset'));
+    nameTd.appendChild(el('span', 'dim', '—'));
+  }
+  tr.appendChild(whatTd);
+  tr.appendChild(nameTd);
+
+  tr.appendChild(el('td', 'mono path', b.path));
+  tr.appendChild(el('td', 'mono dim', fmtBytes(b.compressedBytes)));
+
+  const act = el('td');
+  const del = el('button', 'btn tiny danger', 'Delete');
+  del.addEventListener('click', () => deleteBlock(b.index));
+  act.appendChild(del);
+  tr.appendChild(act);
+  return tr;
 }
 
 // ---------------------------------------------------------------- operations
@@ -425,13 +537,31 @@ async function addAssets(files) {
     }
   }
 
+  // Scaleform UI movies (.gfx/.cfx from GFXForge) — wrap + name, then add.
+  for (const f of files.filter((x) => /\.(gfx|cfx|swf)$/i.test(x.name))) {
+    const bytes = await readFileBytes(f);
+    if (!sniffMovie(bytes)) {
+      results.push({ ok: false, name: f.name, msg: 'no GFX/CFX/FWS/CWS header — not a real Scaleform movie' });
+      continue;
+    }
+    const base = f.name.replace(/\.(gfx|cfx|swf)$/i, '');
+    const name = await promptMovieName(base);
+    if (!name) { results.push({ ok: false, name: f.name, msg: 'cancelled' }); continue; }
+    try {
+      const res = S.doc.addMovie({ movie: bytes, name });
+      results.push({ ok: true, name, hash: hex8(res.hash), warnings: res.warnings, movie: true });
+    } catch (e) {
+      results.push({ ok: false, name: f.name, msg: e.message });
+    }
+  }
+
   const containers = files.filter((f) => /\.(ucfx|bin)$/i.test(f.name));
   if (!containers.length && !results.length) {
     return flash(verdict({
       ok: false, title: 'Nothing to add',
       lines: [{ k: 'dropped', v: `${files.length} file(s)`, ok: false }],
-      hint: 'Add a .ucfx container, or a skinner -assets.zip. If you have a PNG, encode it '
-        + 'to a texture container in the skinner first.',
+      hint: 'Add a skinner -assets.zip, a .ucfx container, or a .gfx UI movie from GFXForge. '
+        + 'If you have a PNG, encode it to a texture container in the skinner first.',
     }));
   }
   for (const f of containers) {
@@ -529,8 +659,8 @@ function promptNameAndType(base) {
     const typeWrap = el('label', 'field');
     typeWrap.appendChild(el('span', null, 'type'));
     const type = el('select');
-    for (const id of [27, 19, 35]) {
-      const o = el('option', null, `${id} — ${TYPE[id].label}`);
+    for (const id of [27, 19, 35, 23]) {
+      const o = el('option', null, `${id} — ${typeInfo(id).label} (${typeInfo(id).blurb})`);
       o.value = String(id);
       type.appendChild(o);
     }
@@ -552,6 +682,95 @@ function promptNameAndType(base) {
     document.body.appendChild(back);
     name.focus(); name.select();
   });
+}
+
+// A movie needs a NAME: the game movie it replaces, or a new one you load from Lua.
+function promptMovieName(base) {
+  return new Promise((resolve) => {
+    const back = el('div', 'modal-back');
+    const box = el('div', 'modal');
+    box.appendChild(el('div', 'modal-t', 'Name this UI movie'));
+    box.appendChild(el('div', 'note',
+      'To REPLACE a game menu/HUD, use its exact name (this tool will show 🔁). '
+      + 'For a NEW overlay, pick any name and load it in Lua with SetSwfFile("<name>.gfx").'));
+    const nameWrap = el('label', 'field');
+    nameWrap.appendChild(el('span', null, 'movie name'));
+    const name = el('input');
+    name.type = 'text'; name.value = base; name.spellcheck = false;
+    nameWrap.appendChild(name);
+    box.appendChild(nameWrap);
+
+    const verdictLine = el('div', 'mono dim hashline');
+    const upd = () => {
+      const clean = String(name.value || '').trim().replace(/\.(gfx|cfx|swf)$/i, '');
+      if (!clean) { verdictLine.textContent = ''; return; }
+      const d = describeAsset(pandemicHashM2(clean), 23);
+      verdictLine.textContent = (d.verdict === 'override' ? '🔁 ' : '✨ ') + d.sentence;
+    };
+    name.addEventListener('input', upd); upd();
+    box.appendChild(verdictLine);
+
+    const row = el('div', 'modal-actions');
+    const cancel = el('button', 'btn ghost', 'Cancel');
+    cancel.addEventListener('click', () => { back.remove(); resolve(null); });
+    const ok = el('button', 'btn', 'Add movie');
+    ok.addEventListener('click', () => { back.remove(); resolve(String(name.value || '').trim()); });
+    row.appendChild(cancel); row.appendChild(ok);
+    box.appendChild(row);
+    back.appendChild(box);
+    document.body.appendChild(back);
+    name.focus(); name.select();
+  });
+}
+
+function removeMod(g) {
+  // Delete highest index first so earlier indices stay valid.
+  const all = [...g.indices, ...(g.manifestIndex !== null ? [g.manifestIndex] : [])];
+  for (const i of [...new Set(all)].sort((a, b) => b - a)) S.doc.blocks.splice(i, 1);
+  renderManager();
+  flash(verdict({
+    ok: true, title: `Removed ${g.name ? `“${g.name}”` : 'loose blocks'}`,
+    lines: [{ k: 'blocks removed', v: String(new Set(all).size) }, { k: 'blocks left', v: String(S.doc.blocks.length) }],
+    hint: 'Save the WAD to write the change.',
+  }));
+}
+
+// Stamp the whole patch as one named mod (adds an invisible manifest block).
+function promptTagMod() {
+  const existing = S.doc.mods().find((g) => g.name !== null);
+  const back = el('div', 'modal-back');
+  const box = el('div', 'modal');
+  box.appendChild(el('div', 'modal-t', existing ? 'Edit mod details' : 'Name this mod'));
+  box.appendChild(el('div', 'note',
+    'This tags the whole patch as one named mod so tools list it as "Your Mod (N blocks)" '
+    + 'instead of raw blocks. It adds a tiny info block the game ignores.'));
+  const mk = (label, val) => {
+    const w = el('label', 'field');
+    w.appendChild(el('span', null, label));
+    const i = el('input'); i.type = 'text'; i.value = val || ''; i.spellcheck = false;
+    w.appendChild(i); box.appendChild(w); return i;
+  };
+  const name = mk('mod name', existing?.name);
+  const author = mk('author (optional)', existing?.author);
+  const version = mk('version (optional)', existing?.version);
+  const row = el('div', 'modal-actions');
+  const cancel = el('button', 'btn ghost', 'Cancel');
+  cancel.addEventListener('click', () => back.remove());
+  const ok = el('button', 'btn', 'Save');
+  ok.addEventListener('click', () => {
+    const n = name.value.trim();
+    if (!n) { name.focus(); return; }
+    S.doc.tagMod({ name: n, author: author.value.trim() || null, version: version.value.trim() || null });
+    back.remove();
+    renderManager();
+    flash(verdict({ ok: true, title: `Tagged as “${n}”`, lines: [{ k: 'blocks in mod', v: String(S.doc.blocks.length - 1) }],
+      hint: 'The patch now carries its name. Save the WAD to keep it.' }));
+  });
+  row.appendChild(cancel); row.appendChild(ok);
+  box.appendChild(row);
+  back.appendChild(box);
+  document.body.appendChild(back);
+  name.focus();
 }
 
 function flash(node) {

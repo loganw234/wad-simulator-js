@@ -30,6 +30,13 @@ front end, not a new implementation of anything.
 
 The fidelity note in `src/sges.js` is quoted directly from the upstream Rust source.
 
+## Scaleform (`.gfx`) packing
+
+`src/gfx.js` reproduces the movie container that the community **`gfx_tool`** writes (the fixed
+single-`data` UCFX wrapper + CSUM, `type_hash 0xFE0E8320`), cross-checked byte-for-byte against
+`gfx_tool`'s output and against the `cfx_pack` fix in the Mercenaries-Fan-Build modkit's
+`wad_builder`. The format work is theirs; this is a browser re-expression of it.
+
 ## Other
 
 - **[fflate](https://github.com/101arrowz/fflate)** by Arjun Barrett (MIT) — the DEFLATE and

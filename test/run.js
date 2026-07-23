@@ -24,7 +24,7 @@ const t = {
   info(msg) { console.log(`       \x1b[2m${msg}\x1b[0m`); },
 };
 
-const SUITES = ['roundtrip.test.js', 'skinner.test.js'];
+const SUITES = ['roundtrip.test.js', 'skinner.test.js', 'beginner.test.js'];
 for (const s of SUITES) {
   if (filter && !s.includes(filter)) continue;
   console.log(`\n\x1b[1m${s}\x1b[0m`);
