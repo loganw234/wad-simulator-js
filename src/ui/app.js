@@ -113,7 +113,18 @@ function howItWorks() {
     b.appendChild(el('div', 'how-s', s));
     return b;
   };
-  flow.appendChild(box('🛠️', 'Make the piece', 'A skin in the skinner, a menu in GFXForge, a model, a script. Each exports a small file.'));
+  const makeBox = box('🛠️', 'Make the piece', 'Each of these exports a small file this tool packs:');
+  const links = el('div', 'how-links');
+  const link = (href, label) => {
+    const a = el('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = label;
+    return a;
+  };
+  links.appendChild(link('https://skins.mercs2.tools/', 'Skinner'));
+  links.appendChild(document.createTextNode(' · '));
+  links.appendChild(link('https://gfx.mercs2.tools/', 'GFXForge'));
+  links.appendChild(document.createTextNode(' — plus any .ucfx model, or a Lua script.'));
+  makeBox.appendChild(links);
+  flow.appendChild(makeBox);
   flow.appendChild(el('div', 'how-arrow', '→'));
   flow.appendChild(box('📦', 'Pack it here', 'This tool wraps those pieces into one vz-patch.wad — the format the game reads.'));
   flow.appendChild(el('div', 'how-arrow', '→'));

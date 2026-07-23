@@ -143,6 +143,8 @@
   .how-icon { font-size:22px; margin-bottom:4px; }
   .how-t { font-weight:600; margin-bottom:4px; }
   .how-s { color:var(--dim); font-size:12px; line-height:1.45; }
+  .how-links { margin-top:6px; font-size:12px; color:var(--dim); }
+  .how-links a { color:var(--accent); font-weight:600; }
   .how-arrow { align-self:center; color:var(--faint); font-size:18px; }
   details.how .note { padding:0 14px 14px; margin-top:0; }
   .note.callout { margin:0 14px 14px; padding:10px 12px; border:1px solid #2f4a6d;
@@ -4253,7 +4255,18 @@ function howItWorks() {
     b.appendChild(el('div', 'how-s', s));
     return b;
   };
-  flow.appendChild(box('🛠️', 'Make the piece', 'A skin in the skinner, a menu in GFXForge, a model, a script. Each exports a small file.'));
+  const makeBox = box('🛠️', 'Make the piece', 'Each of these exports a small file this tool packs:');
+  const links = el('div', 'how-links');
+  const link = (href, label) => {
+    const a = el('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = label;
+    return a;
+  };
+  links.appendChild(link('https://skins.mercs2.tools/', 'Skinner'));
+  links.appendChild(document.createTextNode(' · '));
+  links.appendChild(link('https://gfx.mercs2.tools/', 'GFXForge'));
+  links.appendChild(document.createTextNode(' — plus any .ucfx model, or a Lua script.'));
+  makeBox.appendChild(links);
+  flow.appendChild(makeBox);
   flow.appendChild(el('div', 'how-arrow', '→'));
   flow.appendChild(box('📦', 'Pack it here', 'This tool wraps those pieces into one vz-patch.wad — the format the game reads.'));
   flow.appendChild(el('div', 'how-arrow', '→'));
