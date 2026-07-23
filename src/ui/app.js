@@ -123,6 +123,13 @@ function howItWorks() {
     'Two things a block can do: 🔁 REPLACE something the game already has (an override — safe, '
     + 'reversible by removing the patch), or ✨ ADD something brand-new (which needs a script or '
     + 'template that asks for it). This tool labels every block as one or the other.'));
+  const modkit = el('div', 'note callout');
+  modkit.appendChild(el('b', null, 'Heads up: '));
+  modkit.appendChild(document.createTextNode(
+    'the Modkit will eventually handle all of this end-to-end. Until then, this is the '
+    + 'easy-to-use version of the command-line packer — same result, no terminal — so new '
+    + 'users can build and install a patch WAD without touching the CLI.'));
+  d.appendChild(modkit);
   return d;
 }
 
